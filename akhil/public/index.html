@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseFit — Gym & Fitness Management System</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Custom High-Contrast Theme -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container"></div>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-xl sticky-top">
+    <div class="container-fluid px-3 px-lg-4">
+      <!-- Brand Logo -->
+      <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="#" onclick="handleHomeClick()">
+        <div class="brand-icon"><i class="fa-solid fa-dumbbell"></i></div>
+        <div>
+          <span class="brand-title">PULSE<span class="text-warning">FIT</span></span>
+          <span class="badge bg-secondary ms-2 small d-none d-sm-inline" style="font-size: 0.65rem;">CIA-3 • P18</span>
+        </div>
+      </a>
+
+      <!-- 1-Click Role Switcher for Evaluation -->
+      <div class="d-flex flex-wrap align-items-center gap-2 my-2 my-xl-0 ms-xl-4">
+        <span class="text-muted small fw-bold d-none d-md-inline"><i class="fa-solid fa-sliders text-warning me-1"></i> Demo Role:</span>
+        <button id="btnRoleMember" class="persona-btn active" onclick="switchPersona('member')">
+          <i class="fa-solid fa-user text-success"></i> Client (Alex)
+        </button>
+        <button id="btnRoleExpiring" class="persona-btn" onclick="switchPersona('expiring')">
+          <i class="fa-solid fa-clock text-warning"></i> Client (Expiring)
+        </button>
+        <button id="btnRoleManager" class="persona-btn" onclick="switchPersona('admin')">
+          <i class="fa-solid fa-user-shield text-danger"></i> Manager (Marcus)
+        </button>
+        <button id="btnRoleTrainer" class="persona-btn" onclick="switchPersona('trainer')">
+          <i class="fa-solid fa-person-running text-info"></i> Trainer (Sarah)
+        </button>
+      </div>
+
+      <!-- Auth State & Profile -->
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <!-- Notification Drawer (for Member) -->
+        <div id="notifDropdownWrap" class="dropdown">
+          <button class="btn btn-outline-secondary position-relative btn-sm px-3 py-2" data-bs-toggle="dropdown" title="Notifications">
+            <i class="fa-solid fa-bell text-warning"></i>
+            <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end p-3 shadow-lg" style="width: 320px; max-height: 400px; overflow-y: auto; background: var(--bg-card); border-color: var(--border);">
+            <li class="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary mb-2">
+              <span class="fw-bold text-white small"><i class="fa-solid fa-bell me-1"></i> Notifications</span>
+              <button class="btn btn-link btn-sm text-warning p-0 text-decoration-none small" onclick="markAllNotificationsRead()">Mark all read</button>
+            </li>
+            <div id="notifList" class="small text-muted text-center py-3">No notifications</div>
+          </ul>
+        </div>
+
+        <div id="userProfileNav" class="d-flex align-items-center gap-2">
+          <span id="userRoleBadge" class="role-badge role-member">Member</span>
+          <span id="userNameDisplay" class="fw-bold text-white small d-none d-sm-inline">Alex Mercer</span>
+          <button class="btn btn-sm btn-outline-light ms-1" onclick="logout()" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <div id="guestNav" class="d-none gap-2">
+          <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#loginModal">
+            <i class="fa-solid fa-lock me-1"></i> Login
+          </button>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#registerModal">
+            <i class="fa-solid fa-user-plus me-1"></i> Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Secondary Dynamic Navigation Bar (Role Contextual) -->
+  <div class="border-bottom" style="background-color: #0c1220; border-color: var(--border) !important;">
+    <div class="container-fluid px-3 px-lg-4 py-2">
+      <!-- Member Nav Links -->
+      <ul class="nav nav-pills" id="memberNavLinks">
+        <li class="nav-item">
+          <button class="nav-link active" onclick="showSection('member-dashboard-sec')">
+            <i class="fa-solid fa-house"></i> My Dashboard
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('member-plans-sec')">
+            <i class="fa-solid fa-tags"></i> Membership Plans
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('member-classes-sec')">
+            <i class="fa-solid fa-calendar-check"></i> Book Classes & Waitlist
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('member-attendance-sec')">
+            <i class="fa-solid fa-qrcode"></i> My Attendance & Pass
+          </button>
+        </li>
+      </ul>
+
+      <!-- Manager / Admin Nav Links -->
+      <ul class="nav nav-pills d-none" id="adminNavLinks">
+        <li class="nav-item">
+          <button class="nav-link active" onclick="showSection('admin-analytics-sec')">
+            <i class="fa-solid fa-chart-line"></i> Executive Analytics & BI
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('admin-plans-sec')">
+            <i class="fa-solid fa-cubes"></i> Plan Management
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('admin-members-sec')">
+            <i class="fa-solid fa-users"></i> Member Directory
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('admin-trainers-sec')">
+            <i class="fa-solid fa-user-ninja"></i> Trainers Roster
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('admin-attendance-sec')">
+            <i class="fa-solid fa-clipboard-list"></i> Branch Attendance Logs
+          </button>
+        </li>
+      </ul>
+
+      <!-- Trainer Nav Links -->
+      <ul class="nav nav-pills d-none" id="trainerNavLinks">
+        <li class="nav-item">
+          <button class="nav-link active" onclick="showSection('trainer-schedule-sec')">
+            <i class="fa-solid fa-calendar-days"></i> My Assigned Classes & Roster
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('trainer-notes-sec')">
+            <i class="fa-solid fa-notes-medical"></i> Prescribe Workout & Diet
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" onclick="showSection('trainer-profile-sec')">
+            <i class="fa-solid fa-id-badge"></i> Trainer Profile
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container-fluid px-3 px-lg-4 py-4">    <!-- ================= CLIENT / MEMBER SECTIONS ================= -->
+
+    <!-- Section 1: Member Dashboard -->
+    <section id="member-dashboard-sec" class="role-section">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Welcome back, <span id="dashWelcomeName" class="text-primary">Alex</span>!</h2>
+          <p class="text-muted mb-0">Track your active membership pass, turnstile check-ins, and booked fitness classes.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning" onclick="showSection('member-plans-sec')">
+            <i class="fa-solid fa-bolt me-1"></i> Browse & Renew Plans
+          </button>
+          <button class="btn btn-primary" onclick="showSection('member-classes-sec')">
+            <i class="fa-solid fa-calendar-plus me-1"></i> Book a Class
+          </button>
+        </div>
+      </div>
+
+      <!-- Membership & Digital Pass Row -->
+      <div class="row g-4 mb-4">
+        <!-- Active Membership Card -->
+        <div class="col-lg-4 col-md-6">
+          <div class="card h-100 border-primary" style="border-width: 2px;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-id-card text-primary me-2"></i>Active Membership</span>
+              <span id="membershipStatusBadge" class="badge bg-success">Active</span>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <h3 id="membershipPlanName" class="h4 fw-bold text-white mb-1">Annual Platinum VIP</h3>
+              <p id="membershipDates" class="text-muted small mb-3">Valid until Dec 31, 2026</p>
+
+              <div class="p-3 rounded mb-3 mt-auto" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2);">
+                <div class="d-flex justify-content-between align-items-baseline mb-2">
+                  <span class="small text-muted fw-bold">Duration Remaining</span>
+                  <span class="fs-4 fw-bold text-white"><span id="daysRemainingNumber">335</span> <small class="fs-6 text-primary">days</small></span>
+                </div>
+                <div class="progress" style="height: 8px; background: #0b1120;">
+                  <div id="membershipProgress" class="progress-bar bg-primary" role="progressbar" style="width: 80%"></div>
+                </div>
+              </div>
+
+              <button class="btn btn-outline-warning w-100 btn-sm" onclick="showSection('member-plans-sec')">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Extend / Change Plan
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Digital Turnstile Gym Check-In Pass -->
+        <div class="col-lg-4 col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-qrcode text-warning me-2"></i>Gym Turnstile Pass</span>
+              <span class="badge bg-info text-dark">Barcode Check-In</span>
+            </div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+              <div class="digital-pass mb-3">
+                <div class="small text-muted text-uppercase fw-bold">Scan Turnstile Barcode</div>
+                <div class="barcode-sim" id="memberBarcodeDisplay">GYM-ALEX-8849</div>
+                <div class="small text-success"><i class="fa-solid fa-circle-check me-1"></i> Authorized for Gym Access</div>
+              </div>
+              <button class="btn btn-success w-100 py-2" onclick="performGymCheckIn()">
+                <i class="fa-solid fa-check-double me-2"></i> Record Gym Visit Check-In
+              </button>
+              <div id="lastCheckInTime" class="small text-muted mt-2">Last check-in: Today at 9:15 AM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Stats & Waitlist Card -->
+        <div class="col-lg-4 col-md-12">
+          <div class="row g-3 h-100">
+            <div class="col-6">
+              <div class="card stat-card stat-card-blue h-100">
+                <div class="stat-label">Total Visits</div>
+                <div id="totalVisitsCount" class="stat-value text-primary">7</div>
+                <div class="stat-desc"><i class="fa-solid fa-chart-simple text-primary me-1"></i> All-time visits</div>
+                <i class="fa-solid fa-calendar-check stat-icon text-primary"></i>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stat-card stat-card-amber h-100">
+                <div class="stat-label">This Month</div>
+                <div id="monthlyVisitsCount" class="stat-value text-warning">7</div>
+                <div class="stat-desc"><i class="fa-solid fa-fire text-warning me-1"></i> Active streak</div>
+                <i class="fa-solid fa-fire stat-icon text-warning"></i>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="card p-3 d-flex flex-row align-items-center justify-content-between">
+                <div>
+                  <span class="text-muted small fw-bold d-block">Class Waitlists Active</span>
+                  <span id="memberWaitlistCount" class="fw-bold fs-5 text-warning">0 in queue</span>
+                </div>
+                <button class="btn btn-sm btn-outline-warning" onclick="showSection('member-classes-sec')">
+                  Browse Classes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booked Classes & Trainer Notes Row -->
+      <div class="row g-4">
+        <!-- Upcoming Class Bookings Table -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-calendar-days text-info me-2"></i>My Booked Classes</span>
+              <button class="btn btn-sm btn-outline-primary" onclick="showSection('member-classes-sec')">
+                + Book Another
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Class</th>
+                      <th>Schedule</th>
+                      <th>Trainer</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="myBookingsTableBody">
+                    <tr><td colspan="5" class="text-center text-muted py-4">No upcoming bookings</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personalized Workout & Diet Notes from Trainer -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-utensils text-success me-2"></i>Trainer Nutrition & Workout Plan</span>
+              <span class="badge bg-secondary">Prescribed by Coach</span>
+            </div>
+            <div class="card-body">
+              <div id="workoutDietNotesContainer" class="d-flex flex-column gap-3">
+                <div class="text-center text-muted py-4">No workout & diet plans assigned yet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Membership Plans Store -->
+    <section id="member-plans-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Gym Membership Plans</h2>
+          <p class="text-muted mb-0">Select the plan that matches your training goals. Upgrades and renewals apply immediately.</p>
+        </div>
+        <button class="btn btn-outline-light btn-sm" onclick="showSection('member-dashboard-sec')">
+          <i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard
+        </button>
+      </div>
+
+      <div class="row g-4" id="plansCardsContainer">
+        <!-- Dynamically rendered plan cards -->
+      </div>
+    </section>
+
+    <!-- Section 3: Class Schedule & Booking -->
+    <section id="member-classes-sec" class="role-section d-none">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Group Fitness Class Schedule</h2>
+          <p class="text-muted mb-0">Book high-tempo sessions or join the waitlist if a class is full.</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <label class="text-muted small fw-bold">Filter:</label>
+          <select id="classCategoryFilter" class="form-select form-select-sm" onchange="loadClasses()" style="width: 170px;">
+            <option value="">All Categories</option>
+            <option value="Yoga">Yoga Flow</option>
+            <option value="HIIT">HIIT & Conditioning</option>
+            <option value="Strength">Strength & Lifting</option>
+            <option value="Spinning">Spinning & Rhythm</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-4" id="classesCardsContainer">
+        <!-- Dynamically rendered class cards -->
+      </div>
+    </section>
+
+    <!-- Section 4: My Attendance History -->
+    <section id="member-attendance-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">My Attendance & Visit Logs</h2>
+          <p class="text-muted mb-0">Complete record of your gym floor visits and booked class sessions.</p>
+        </div>
+        <button class="btn btn-success btn-sm" onclick="performGymCheckIn()">
+          <i class="fa-solid fa-check-double me-1"></i> Record Check-In Now
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Visit Type</th>
+                  <th>Class / Facility</th>
+                  <th>Status</th>
+                  <th>Confirmation Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="memberAttendanceTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading attendance records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>    <!-- ================= BRANCH MANAGER / ADMIN SECTIONS ================= -->
+
+    <!-- Section 5: Admin Analytics & BI -->
+    <section id="admin-analytics-sec" class="role-section d-none">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Branch Executive Analytics & BI</h2>
+          <p class="section-subtitle mb-0">Live attendance trends, membership plan popularity, and renewal rate reports.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning btn-sm" onclick="triggerRenewalScan()">
+            <i class="fa-solid fa-bell me-1"></i> Scan Expiries & Send Reminders
+          </button>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPlanModal">
+            <i class="fa-solid fa-plus me-1"></i> Create Plan
+          </button>
+        </div>
+      </div>
+
+      <!-- Manager KPI Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+          <div class="card stat-card stat-card-blue">
+            <div class="stat-label">Total Members</div>
+            <div id="kpiTotalMembers" class="stat-value text-primary">5</div>
+            <div class="stat-desc"><i class="fa-solid fa-users text-primary me-1"></i> Registered accounts</div>
+            <i class="fa-solid fa-users stat-icon text-primary"></i>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+          <div class="card stat-card stat-card-green">
+            <div class="stat-label">Active Memberships</div>
+            <div id="kpiActiveMembers" class="stat-value text-success">5</div>
+            <div class="stat-desc"><i class="fa-solid fa-id-card text-success me-1"></i> Currently valid passes</div>
+            <i class="fa-solid fa-id-card stat-icon text-success"></i>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+          <div class="card stat-card stat-card-amber">
+            <div class="stat-label">Total Revenue</div>
+            <div id="kpiTotalRevenue" class="stat-value text-warning">₹855</div>
+            <div class="stat-desc"><i class="fa-solid fa-indian-rupee-sign text-warning me-1"></i> Plan sales gross</div>
+            <i class="fa-solid fa-indian-rupee-sign stat-icon text-warning"></i>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+          <div class="card stat-card stat-card-rose">
+            <div class="stat-label">Renewal Rate</div>
+            <div id="kpiRenewalRate" class="stat-value text-danger">0%</div>
+            <div class="stat-desc"><i class="fa-solid fa-arrows-rotate text-danger me-1"></i> Member retention</div>
+            <i class="fa-solid fa-arrows-rotate stat-icon text-danger"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Charts -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-chart-simple text-primary me-2"></i>Attendance Trends (Past 7 Days)</span>
+              <span class="badge bg-secondary">Daily Volume</span>
+            </div>
+            <div class="card-body">
+              <canvas id="attendanceChart" height="230"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fa-solid fa-chart-pie text-warning me-2"></i>Plan Popularity Breakdown</span>
+              <span class="badge bg-secondary">Share by Tier</span>
+            </div>
+            <div class="card-body">
+              <canvas id="planPopularityChart" height="230"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Admin Plan Management -->
+    <section id="admin-plans-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Membership Plan Management (Module 2)</h2>
+          <p class="text-muted mb-0">Create, edit, or toggle branch membership tiers and pricing.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPlanModal">
+          <i class="fa-solid fa-plus me-1"></i> Add New Plan
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Plan Name</th>
+                  <th>Duration</th>
+                  <th>Price (₹)</th>
+                  <th>Status</th>
+                  <th>Features Included</th>
+                </tr>
+              </thead>
+              <tbody id="adminPlansTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading plans...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: Admin Member Directory -->
+    <section id="admin-members-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Member Directory & Subscriptions</h2>
+          <p class="text-muted mb-0">View all registered gym members, active plans, and expiry dates.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <input type="text" id="memberSearchInput" class="form-control form-control-sm" placeholder="Search by name or email..." oninput="filterMembersList()" style="width: 240px;" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Member Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Active Plan</th>
+                  <th>Expiry Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="adminMembersTableBody">
+                <tr><td colspan="6" class="text-center text-muted py-4">Loading member directory...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 8: Admin Trainers Roster -->
+    <section id="admin-trainers-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Branch Trainers Roster (Module 4)</h2>
+          <p class="text-muted mb-0">Manage certified instructors, specializations, and bios.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTrainerModal">
+          <i class="fa-solid fa-user-plus me-1"></i> Add New Trainer
+        </button>
+      </div>
+
+      <div class="row g-4" id="adminTrainersCardsContainer">
+        <!-- Rendered trainers list -->
+      </div>
+    </section>
+
+    <!-- Section 9: Admin Attendance Logs -->
+    <section id="admin-attendance-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Branch Attendance Records (Module 7)</h2>
+          <p class="text-muted mb-0">Real-time check-in logs across gym turnstiles and fitness classes.</p>
+        </div>
+        <button class="btn btn-outline-light btn-sm" onclick="loadAdminAttendanceTable()">
+          <i class="fa-solid fa-rotate me-1"></i> Refresh Logs
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Date & Time</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="adminAttendanceTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading branch attendance...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>    <!-- ================= TRAINER SECTIONS ================= -->
+
+    <!-- Section 10: Trainer Schedule & Class Roster -->
+    <section id="trainer-schedule-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">My Assigned Classes & Student Rosters</h2>
+          <p class="text-muted mb-0">View sessions, track enrolled members, and mark student attendance.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createClassModal">
+            <i class="fa-solid fa-plus me-1"></i> Schedule Class
+          </button>
+          <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createNoteModal">
+            <i class="fa-solid fa-notes-medical me-1"></i> Prescribe Workout/Diet
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Class Title</th>
+                  <th>Category</th>
+                  <th>Schedule</th>
+                  <th>Enrolled / Cap</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trainerClassesTableBody">
+                <tr><td colspan="6" class="text-center text-muted py-4">Loading assigned classes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 11: Prescribe Workout & Diet Notes (Module 9) -->
+    <section id="trainer-notes-sec" class="role-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="h3 fw-bold text-white mb-1">Prescribe Workout & Diet Plan (Module 9)</h2>
+          <p class="text-muted mb-0">Create customized training splits and macronutrient guidance for gym members.</p>
+        </div>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createNoteModal">
+          <i class="fa-solid fa-plus me-1"></i> Open Prescription Modal
+        </button>
+      </div>
+
+      <div class="card p-4">
+        <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-dumbbell text-primary me-2"></i>Quick Plan Prescription Form</h5>
+        <form id="inlineNoteForm" onsubmit="handleInlineNoteSubmit(event)">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Select Gym Member</label>
+              <select id="inlineNoteMemberSelect" class="form-select" required>
+                <option value="">Choose member...</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Plan Title</label>
+              <input type="text" id="inlineNoteTitleInput" class="form-control" required placeholder="e.g. 8-Week Hypertrophy & Conditioning" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Target Fitness Goals</label>
+              <input type="text" id="inlineNoteGoalsInput" class="form-control" placeholder="e.g. Increase deadlift 1RM by 15kg while maintaining 12% bodyfat" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Workout Routine & Exercises</label>
+              <textarea id="inlineNoteWorkoutInput" class="form-control" rows="4" required placeholder="Day 1: Heavy Squats (4x6), Bulgarian Split Squats (3x10)..."></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nutrition & Macronutrient Targets</label>
+              <textarea id="inlineNoteDietInput" class="form-control" rows="4" required placeholder="Target: 2,750 kcal/day, 180g Protein, 4L Water daily..."></textarea>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-success px-4 py-2">
+                <i class="fa-solid fa-paper-plane me-1"></i> Assign Plan to Member
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Section 12: Trainer Profile Settings -->
+    <section id="trainer-profile-sec" class="role-section d-none">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card p-4">
+            <h3 class="h4 fw-bold text-white mb-3"><i class="fa-solid fa-id-badge text-info me-2"></i>My Trainer Profile</h3>
+            <form id="trainerProfileForm" onsubmit="handleUpdateTrainerProfile(event)">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" id="trainerProfName" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Phone Number</label>
+                  <input type="text" id="trainerProfPhone" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Years of Experience</label>
+                  <input type="number" id="trainerProfExp" class="form-control" min="0" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Specializations (comma-separated)</label>
+                  <input type="text" id="trainerProfSpecs" class="form-control" placeholder="HIIT, Conditioning, Yoga" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Professional Bio</label>
+                  <textarea id="trainerProfBio" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Modal: Class Student Roster & Check-In (Trainer) -->
+  <div class="modal fade" id="rosterModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-clipboard-check text-success me-2"></i>Class Roster & Attendance</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="p-3 border-bottom border-secondary">
+            <h5 id="rosterClassTitle" class="fw-bold text-white mb-1">Class Title</h5>
+            <span id="rosterClassSchedule" class="text-muted small">Schedule</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Enrolled Member</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="rosterTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">No enrolled students yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Login -->
+  <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-lock text-warning me-2"></i>Login to PulseFit</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="loginEmail" class="form-control" required placeholder="name@domain.com" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Register -->
+  <div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-user-plus text-primary me-2"></i>Member Sign Up</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="regName" class="form-control" required placeholder="e.g. Jordan Smith" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="regEmail" class="form-control" required placeholder="e.g. jordan@example.com" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" id="regPassword" class="form-control" required minlength="6" placeholder="At least 6 characters" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Phone Number</label>
+              <input type="text" id="regPhone" class="form-control" placeholder="+1 (555) 000-0000" />
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2">Create My Account</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create Plan (Admin) -->
+  <div class="modal fade" id="createPlanModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-plus text-primary me-2"></i>Create Membership Plan</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createPlanForm" onsubmit="handleCreatePlanSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Plan Name</label>
+              <input type="text" id="planNameInput" class="form-control" required placeholder="e.g. Student Semester Pass" />
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label">Duration (Months)</label>
+                <input type="number" id="planDurationInput" class="form-control" min="1" required value="3" />
+              </div>
+              <div class="col-6">
+                <label class="form-label">Price (₹)</label>
+                <input type="number" id="planPriceInput" class="form-control" min="0" step="1" required value="1999" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <textarea id="planDescInput" class="form-control" rows="2" placeholder="Summary of benefits..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Save Membership Plan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Trainer (Admin) -->
+  <div class="modal fade" id="createTrainerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-user-plus text-primary me-2"></i>Onboard New Trainer</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createTrainerForm" onsubmit="handleCreateTrainerSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Trainer Name</label>
+              <input type="text" id="trainerNameInput" class="form-control" required placeholder="e.g. Alex Henderson" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="trainerEmailInput" class="form-control" required placeholder="e.g. trainer@gymfitness.com" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Initial Password</label>
+              <input type="password" id="trainerPassInput" class="form-control" value="Trainer@123" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Specializations (comma-separated)</label>
+              <input type="text" id="trainerSpecsInput" class="form-control" placeholder="CrossFit, Olympic Lifting, Nutrition" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Years of Experience</label>
+              <input type="number" id="trainerExpInput" class="form-control" min="0" value="3" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Register Trainer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Schedule Class (Trainer / Admin) -->
+  <div class="modal fade" id="createClassModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-calendar-plus text-warning me-2"></i>Schedule Fitness Class</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createClassForm" onsubmit="handleCreateClassSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Class Title</label>
+              <input type="text" id="classTitleInput" class="form-control" required placeholder="e.g. Kettlebell Power Conditioning" />
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label">Category</label>
+                <select id="classCategoryInput" class="form-select">
+                  <option value="Yoga">Yoga</option>
+                  <option value="HIIT">HIIT</option>
+                  <option value="Strength">Strength</option>
+                  <option value="Spinning">Spinning</option>
+                  <option value="CrossFit">CrossFit</option>
+                  <option value="General">General</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Capacity Limit</label>
+                <input type="number" id="classCapacityInput" class="form-control" min="1" value="15" required />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-7">
+                <label class="form-label">Date & Time</label>
+                <input type="datetime-local" id="classScheduleInput" class="form-control" required />
+              </div>
+              <div class="col-5">
+                <label class="form-label">Duration (Min)</label>
+                <input type="number" id="classDurationInput" class="form-control" min="15" value="60" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Studio / Room</label>
+              <input type="text" id="classRoomInput" class="form-control" value="Main Studio A" />
+            </div>
+            <button type="submit" class="btn btn-warning w-100 py-2">Publish Class to Schedule</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Prescribe Workout & Diet (Trainer / Admin) -->
+  <div class="modal fade" id="createNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-notes-medical text-success me-2"></i>Prescribe Workout & Diet Plan</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createNoteForm" onsubmit="handleModalNoteSubmit(event)">
+            <div class="mb-3">
+              <label class="form-label">Select Member</label>
+              <select id="noteMemberSelect" class="form-select" required>
+                <option value="">Choose member...</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Plan Title</label>
+              <input type="text" id="noteTitleInput" class="form-control" required placeholder="e.g. 4-Week Hypertrophy Protocol" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Target Goals</label>
+              <input type="text" id="noteGoalsInput" class="form-control" placeholder="e.g. Fat loss and core strength" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Workout Exercises & Sets</label>
+              <textarea id="noteWorkoutInput" class="form-control" rows="3" required placeholder="Daily exercise breakdown, reps, sets..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nutrition & Macro Guidelines</label>
+              <textarea id="noteDietInput" class="form-control" rows="3" required placeholder="Calories, protein targets, hydration..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2">Assign Plan to Member</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js for Reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Main Frontend Application Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>
