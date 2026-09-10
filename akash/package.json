@@ -1,0 +1,38 @@
+{
+  "name": "gym-fitness-management",
+  "version": "1.0.0",
+  "description": "Gym & Fitness Membership Management System - Christ University CIA-3 Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js",
+    "test": "node tests/api.test.js",
+    "db:start": "node -e \"const { spawn } = require('child_process'), fs = require('fs'); if (!fs.existsSync('data/db')) fs.mkdirSync('data/db', { recursive: true }); spawn('node_modules/.cache/mongodb-memory-server/mongod-x64-win32-7.0.24.exe', ['--dbpath', 'data/db', '--port', '27017'], { stdio: 'inherit' });\""
+  },
+  "keywords": [
+    "gym",
+    "fitness",
+    "membership",
+    "management",
+    "mongodb",
+    "express",
+    "nodejs",
+    "jwt",
+    "rbac"
+  ],
+  "author": "Christ University CIA-3 Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.1"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.0.0"
+  }
+}
